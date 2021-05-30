@@ -22,7 +22,7 @@ func main () {
 			log.Fatal(err)
 		}
 
-		time.Sleep(time.Second)
+		time.Sleep(time.Second*20)
 
 		err = cmdClose.Run()
 		if err != nil {
