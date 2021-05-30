@@ -3,7 +3,6 @@ package main
 import (
 	"google.golang.org/api/calendar/v3"
 	"time"
-	"fmt"
 )
 
 type Arrosage struct {
@@ -17,10 +16,20 @@ type Arrosages []Arrosage
 
 type summary string
 
-func (arrosages Arrosages) aEffectuer() (result Arrosages) {
+func (arrosages Arrosages) toDo() (result Arrosages) {
+	for _, arr := range arrosages {
+		if !arr.Done {
+			result = append(result, arr)
+		}
+	}
+
+	return
+}
+
+func (arrosages Arrosages) current() (result Arrosages) {
 	now := time.Now()
 	for _, arr := range arrosages {
-		if !arr.Done && arr.Start.After(now) && arr.End.Before(now){
+		if arr.Start.Before(now) && arr.End.After(now) {
 			result = append(result, arr)
 		}
 	}
