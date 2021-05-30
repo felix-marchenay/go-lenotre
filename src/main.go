@@ -1,9 +1,11 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+)
 
 func main () {
-	events := getEvents()
+	arrosages := arrosages()
 
-	fmt.Println(events)
+	fmt.Println(arrosages.aEffectuer())
 }
