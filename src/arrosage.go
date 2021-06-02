@@ -50,6 +50,10 @@ func (arrosage Arrosage) setDone() Arrosage{
 
 func (str summary) lastchars(length int) (result summary) {
 
+	if (len(str) < length) {
+		return str
+	}
+
 	result = str[len(str)-length:]
 	return
 }
