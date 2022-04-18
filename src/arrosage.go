@@ -52,7 +52,7 @@ func arrosage() Arrosage {
 		start, _ := time.Parse(time.RFC3339, event.Start.DateTime)
 		end, _ := time.Parse(time.RFC3339, event.End.DateTime)
 
-		if start.Before(now) && end.After(now) && summary(event.Summary).lastchars(3) == "-OK" {
+		if start.Before(now) && end.After(now) && summary(event.Summary).lastchars(3) != "-OK" {
 			return Arrosage{
 				false,
 				start,
