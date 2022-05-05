@@ -1,5 +1,7 @@
 package main
 
 func main() {
-	arrosage().arroser()
+	arrosage := arrosage()
+	arrosage.arroser()
+	arrosage.setDone().save()
 }
