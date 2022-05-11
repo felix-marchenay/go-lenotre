@@ -10,12 +10,21 @@ import (
 	"google.golang.org/api/calendar/v3"
 )
 
+var pinOut map[string]string = map[string]string{
+	"pompe": "0",
+	"out1":  "1",
+	"out2":  "2",
+	"out3":  "3",
+	"out4":  "4",
+}
+
 type Arrosage struct {
 	Done     bool
 	Start    time.Time
 	End      time.Time
 	Event    calendar.Event
 	Duration time.Duration
+	Sortie   string
 }
 
 type summary string
@@ -41,7 +50,7 @@ func (str summary) lastchars(length int) (result summary) {
 	return
 }
 
-func arrosage() Arrosage {
+func arrosage() (arrosages []Arrosage) {
 
 	events := getEvents()
 
@@ -52,18 +61,23 @@ func arrosage() Arrosage {
 		start, _ := time.Parse(time.RFC3339, event.Start.DateTime)
 		end, _ := time.Parse(time.RFC3339, event.End.DateTime)
 
+		outNum := regexp.MustCompile(`out[0-9]`)
+		outFound := outNum.FindString(event.Summary)
+
 		if start.Before(now) && end.After(now) && summary(event.Summary).lastchars(3) != "-OK" {
-			return Arrosage{
+			fmt.Println("out:", outFound)
+			arrosages = append(arrosages, Arrosage{
 				false,
 				start,
 				end,
 				*event,
 				durationFromString(event.Summary),
-			}
+				outFound,
+			})
 		}
 	}
 
-	panic("Aucun arrosage")
+	return arrosages
 }
 
 func durationFromString(str string) time.Duration {
@@ -98,22 +112,30 @@ func (arrosage Arrosage) save() {
 }
 
 func (arr Arrosage) arroser() {
-	fmt.Println("Arrosage en cours : " + arr.Event.Summary)
+	fmt.Println("Arrosage en cours : "+arr.Event.Summary, "temps : ", arr.Duration)
 
-	cmdOpen := exec.Command("gpio", "write", "2", "1")
-	cmdClose := exec.Command("gpio", "write", "2", "0")
-	err := cmdOpen.Run()
+	exec.Command("gpio", "write", pinOut["pompe"], "0").Run()
+	exec.Command("gpio", "write", pinOut["out1"], "0").Run()
+	exec.Command("gpio", "write", pinOut["out2"], "0").Run()
+	exec.Command("gpio", "write", pinOut["out3"], "0").Run()
+	exec.Command("gpio", "write", pinOut["out4"], "0").Run()
 
-	if err != nil {
-		panic(err)
-	}
+	cmdOpenPompe := exec.Command("gpio", "write", "0", "1")
+	cmdClosePompe := exec.Command("gpio", "write", "0", "0")
+	cmdOpenVanne := exec.Command("gpio", "write", pinOut[arr.Sortie], "1")
+	cmdCloseVanne := exec.Command("gpio", "write", pinOut[arr.Sortie], "0")
+
+	cmdOpenVanne.Run()
+
+	time.Sleep(time.Millisecond * 500)
+
+	cmdOpenPompe.Run()
 
 	time.Sleep(arr.Duration)
 
 	arr.save()
 
-	err = cmdClose.Run()
-	if err != nil {
-		panic(err)
-	}
+	cmdClosePompe.Run()
+	time.Sleep(time.Millisecond * 500)
+	cmdCloseVanne.Run()
 }

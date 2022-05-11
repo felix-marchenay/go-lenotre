@@ -1,7 +1,8 @@
 package main
 
 func main() {
-	arrosage := arrosage()
-	arrosage.arroser()
-	arrosage.setDone().save()
+	for _, arrosage := range arrosage() {
+		arrosage.arroser()
+		arrosage.setDone().save()
+	}
 }
