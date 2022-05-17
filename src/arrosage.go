@@ -115,15 +115,15 @@ func (arr Arrosage) arroser() {
 	fmt.Println("Arrosage en cours : "+arr.Event.Summary, "temps : ", arr.Duration)
 
 	exec.Command("gpio", "write", pinOut["pompe"], "0").Run()
-	exec.Command("gpio", "write", pinOut["out1"], "0").Run()
-	exec.Command("gpio", "write", pinOut["out2"], "0").Run()
-	exec.Command("gpio", "write", pinOut["out3"], "0").Run()
-	exec.Command("gpio", "write", pinOut["out4"], "0").Run()
+	exec.Command("gpio", "write", pinOut["out1"], "1").Run()
+	exec.Command("gpio", "write", pinOut["out2"], "1").Run()
+	exec.Command("gpio", "write", pinOut["out3"], "1").Run()
+	exec.Command("gpio", "write", pinOut["out4"], "1").Run()
 
 	cmdOpenPompe := exec.Command("gpio", "write", "0", "1")
 	cmdClosePompe := exec.Command("gpio", "write", "0", "0")
-	cmdOpenVanne := exec.Command("gpio", "write", pinOut[arr.Sortie], "1")
-	cmdCloseVanne := exec.Command("gpio", "write", pinOut[arr.Sortie], "0")
+	cmdOpenVanne := exec.Command("gpio", "write", pinOut[arr.Sortie], "0")
+	cmdCloseVanne := exec.Command("gpio", "write", pinOut[arr.Sortie], "1")
 
 	cmdOpenVanne.Run()
 
