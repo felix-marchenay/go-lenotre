@@ -12,25 +12,14 @@ type FileDatabase[T any] struct {
 	initiated bool
 }
 
-func (f *FileDatabase[T]) init() {
-	if f.initiated {
-		return
+func (f FileDatabase[T]) All() (result []T) {
+	f.init()
+
+	for _, val := range f.values {
+		result = append(result, val)
 	}
 
-	data := getData(f.filename)
-
-	if len(data) == 0 {
-		f.values = make(map[string]T)
-		f.initiated = true
-		return
-	}
-
-	err := json.Unmarshal(data, &f.values)
-	if err != nil {
-		panic(err)
-	}
-
-	f.initiated = true
+	return result
 }
 
 func (f FileDatabase[T]) Exist(key string) bool {
@@ -64,10 +53,36 @@ func (f *FileDatabase[T]) Set(key string, value T) {
 	setData(f.filename, json)
 }
 
-func getData(filename string) []byte {
-	f, err := os.ReadFile("../var/dbfile/" + filename)
+func (f *FileDatabase[T]) init() {
+	if f.initiated {
+		return
+	}
 
-	if err == nil {
+	data := getData(f.filename)
+
+	if len(data) == 0 {
+		f.values = make(map[string]T)
+		f.initiated = true
+		return
+	}
+
+	err := json.Unmarshal(data, &f.values)
+	if err != nil {
+		panic(err)
+	}
+
+	f.initiated = true
+}
+
+func getData(filename string) []byte {
+	wd, err := os.Getwd()
+	if err != nil {
+		panic("Current working dir introuvable")
+	}
+
+	f, err := os.ReadFile(wd + "/var/dbfile/" + filename)
+
+	if err != nil {
 		os.WriteFile(filename, []byte{}, 0777)
 		return []byte{}
 	}
@@ -76,7 +91,12 @@ func getData(filename string) []byte {
 }
 
 func setData(filename string, data []byte) {
-	err := os.WriteFile("../var/dbfile/"+filename, data, 0777)
+	wd, err := os.Getwd()
+	if err != nil {
+		panic("Current working dir introuvable")
+	}
+
+	err = os.WriteFile(wd+"/var/dbfile/"+filename, data, 0777)
 	if err != nil {
 		fmt.Println(err)
 	}

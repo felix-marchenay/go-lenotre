@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"os/exec"
 	"regexp"
 	"strconv"
@@ -18,6 +17,28 @@ var pinOut map[string]string = map[string]string{
 	"out4":  "4",
 }
 
+type ArrosageSlice []Arrosage
+
+func (arrosages ArrosageSlice) AFaire() (afaire []Arrosage) {
+
+	for _, arrosage := range arrosages {
+
+		if arrosage.Done {
+			continue
+		}
+
+		now := time.Now()
+
+		if now.Before(arrosage.Start) || now.After(arrosage.End) {
+			continue
+		}
+
+		afaire = append(afaire, arrosage)
+	}
+
+	return afaire
+}
+
 type Arrosage struct {
 	Done     bool
 	Start    time.Time
@@ -29,15 +50,9 @@ type Arrosage struct {
 
 type summary string
 
-func (arrosage Arrosage) setDone() Arrosage {
-	if arrosage.Done {
-		return arrosage
-	}
-
+func (arrosage *Arrosage) setDone() {
 	arrosage.Done = true
 	arrosage.Event.Summary = arrosage.Event.Summary + " -OK"
-
-	return arrosage
 }
 
 func (str summary) lastchars(length int) (result summary) {
@@ -50,11 +65,12 @@ func (str summary) lastchars(length int) (result summary) {
 	return
 }
 
-func arrosage() (arrosages []Arrosage) {
+func ArrosagesFromG() (arrosages []Arrosage, err error) {
 
-	events := getEvents()
-
-	now := time.Now()
+	events, err := getEvents()
+	if err != nil {
+		return nil, err
+	}
 
 	for _, event := range events.Items {
 
@@ -64,20 +80,23 @@ func arrosage() (arrosages []Arrosage) {
 		outNum := regexp.MustCompile(`out[0-9]`)
 		outFound := outNum.FindString(event.Summary)
 
-		if start.Before(now) && end.After(now) && summary(event.Summary).lastchars(3) != "-OK" {
-			fmt.Println("out:", outFound)
-			arrosages = append(arrosages, Arrosage{
-				false,
-				start,
-				end,
-				*event,
-				durationFromString(event.Summary),
-				outFound,
-			})
+		sortie, found := pinOut[outFound]
+		if found == false {
+			sortie = "out1"
 		}
+
+		arrosages = append(arrosages, Arrosage{
+			summary(event.Summary).lastchars(3) == "-OK",
+			start,
+			end,
+			*event,
+			durationFromString(event.Summary),
+			sortie,
+		})
+
 	}
 
-	return arrosages
+	return arrosages, nil
 }
 
 func durationFromString(str string) time.Duration {
@@ -107,12 +126,11 @@ func durationFromString(str string) time.Duration {
 	return time.Second * 30
 }
 
-func (arrosage Arrosage) save() {
-	saveEvent(&arrosage.Event)
+func (arrosage Arrosage) save() error {
+	return saveEvent(&arrosage.Event)
 }
 
-func (arr Arrosage) arroser() {
-	fmt.Println("Arrosage en cours : "+arr.Event.Summary, "temps : ", arr.Duration)
+func (arr *Arrosage) arroser() {
 
 	exec.Command("gpio", "write", pinOut["pompe"], "0").Run()
 	exec.Command("gpio", "write", pinOut["out1"], "1").Run()
@@ -132,8 +150,6 @@ func (arr Arrosage) arroser() {
 	cmdOpenPompe.Run()
 
 	time.Sleep(arr.Duration)
-
-	arr.save()
 
 	cmdClosePompe.Run()
 	time.Sleep(time.Millisecond * 500)

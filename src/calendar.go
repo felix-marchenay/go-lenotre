@@ -73,53 +73,53 @@ func saveToken(path string, token *oauth2.Token) {
 	json.NewEncoder(f).Encode(token)
 }
 
-func getEvents() *calendar.Events {
+func getEvents() (*calendar.Events, error) {
 	ctx := context.Background()
 	b, err := ioutil.ReadFile("credentials.json")
 	if err != nil {
-		log.Fatalf("Unable to read client secret file: %v", err)
+		return nil, err
 	}
 
 	// If modifying these scopes, delete your previously saved token.json.
 	config, err := google.ConfigFromJSON(b, calendar.CalendarEventsScope)
 	if err != nil {
-		log.Fatalf("Unable to parse client secret file to config: %v", err)
+		return nil, err
 	}
 	client := getClient(config)
 
 	srv, err := calendar.NewService(ctx, option.WithHTTPClient(client))
 	if err != nil {
-		log.Fatalf("Unable to retrieve Calendar client: %v", err)
+		return nil, err
 	}
 
 	vingt_quatre_heures_plus_tot := time.Now().Add(-24 * (time.Hour)).Format(time.RFC3339)
 
 	events, err := srv.Events.List(calendarId).ShowDeleted(false).
-		SingleEvents(true).TimeMin(vingt_quatre_heures_plus_tot).MaxResults(10).OrderBy("startTime").Do()
+		SingleEvents(true).TimeMin(vingt_quatre_heures_plus_tot).MaxResults(150).OrderBy("startTime").Do()
 	if err != nil {
-		log.Fatalf("Unable to retrieve next ten of the user's events: %v", err)
+		return nil, err
 	}
 
-	return events
+	return events, nil
 }
 
 func saveEvent(event *calendar.Event) error {
 	ctx := context.Background()
 	b, err := ioutil.ReadFile("credentials.json")
 	if err != nil {
-		log.Fatalf("Unable to read client secret file: %v", err)
+		return err
 	}
 
 	// If modifying these scopes, delete your previously saved token.json.
 	config, err := google.ConfigFromJSON(b, calendar.CalendarReadonlyScope)
 	if err != nil {
-		log.Fatalf("Unable to parse client secret file to config: %v", err)
+		return err
 	}
 	client := getClient(config)
 
 	srv, err := calendar.NewService(ctx, option.WithHTTPClient(client))
 	if err != nil {
-		log.Fatalf("Unable to retrieve Calendar client: %v", err)
+		return err
 	}
 
 	_, error := srv.Events.Update(calendarId, event.Id, event).Do()
